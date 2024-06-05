@@ -1,14 +1,24 @@
 const fragmentShader = `
 
-uniform float uTime;
-uniform float progress;
-uniform sampler2D texture1;
-uniform vec4 uResolution;
-varying vec2 vUv;
-varying vec3 vPosition;
-varying vec3 vColor;
-float PI = 3.1415926;
+uniform float uEps;
+uniform float uMaxDis;
+uniform float uMaxSteps;
 
+uniform vec3 uCamPos;
+uniform mat4 uCamToWorldMat;
+uniform mat4 uCamInverseProjMat;
+
+uniform vec3 uLightDir;
+uniform vec3 uLightColor;
+
+uniform float uDiffIntensity;
+uniform float uSpecIntensity;
+uniform float uAmbientIntensity;
+uniform float uShininess;
+
+uniform float uTime;
+
+varying vec2 vUv;
 
 void main() {
 
