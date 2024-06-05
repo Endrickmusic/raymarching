@@ -86,7 +86,7 @@ export default function Experience() {
   return (
     <>
       <OrbitControls />
-      <directionalLight ref={lightRef} />
+      <directionalLight ref={lightRef} intensity={1} />
 
       <mesh>
         <boxGeometry args={[1, 1, 1]} />
