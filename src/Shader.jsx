@@ -1,13 +1,16 @@
 import { useRef, useMemo, useEffect } from "react"
 import { MathUtils, Vector3, Color } from "three"
 import { useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, useTexture } from "@react-three/drei"
+import { OrbitControls, useTexture, useFBO } from "@react-three/drei"
 
 import vertexShader from "./shaders/vertexShader.js"
 import fragmentShader from "./shaders/fragmentShader.js"
 
 export default function Experience() {
   const { camera } = useThree()
+  const viewport = useThree((state) => state.viewport)
+  const scene = useThree((state) => state.scene)
+  const buffer = useFBO()
 
   const lightRef = useRef()
   const planeRef = useRef()
@@ -36,20 +39,25 @@ export default function Experience() {
       uAmbientIntensity: { value: 0.15 },
       uShininess: { value: 16.0 },
       uTime: { value: 0.0 },
+      uFBO: { value: buffer.texture },
     }),
     [backgroundColor, camera, lightRef]
   )
 
   useEffect(() => {
-    lightRef.current.position.set(0, 0, 1).normalize()
-    lightRef.current.color.set(0xffffff)
-    console.log(camera.near)
+    if (lightRef.current) {
+      // lightRef.current.position.set(0, 0, 1).normalize()
+      // lightRef.current.color.set(0xffffff)
+      uniforms.uLightDir.value = lightRef.current.position
+      // uniforms.uLightColor.value = lightRef.current.color.toArray()
+      console.log(lightRef.current.position)
+    }
   }, [])
 
   let cameraForwardPos = new Vector3(0, 0, -1)
 
-  useFrame(({ clock }) => {
-    uniforms.uTime.value = clock.getElapsedTime()
+  useFrame((state) => {
+    uniforms.uTime.value = state.clock.getElapsedTime()
     cameraForwardPos = camera.position
       .clone()
       .add(
@@ -59,6 +67,20 @@ export default function Experience() {
       )
     planeRef.current.position.copy(cameraForwardPos)
     planeRef.current.rotation.copy(camera.rotation)
+
+    const viewportFBO = state.viewport.getCurrentViewport(
+      state.camera,
+      [0, 0, 15]
+    )
+
+    // This is entirely optional but spares us one extra render of the scene
+    // The createPortal below will mount the children of <Lens> into the new THREE.Scene above
+    // The following code will render that scene into a buffer, whose texture will then be fed into
+    // a plane spanning the full screen and the lens transmission material
+    state.gl.setRenderTarget(buffer)
+    state.gl.setClearColor("#d8d7d7")
+    state.gl.render(scene, state.camera)
+    state.gl.setRenderTarget(null)
   })
 
   return (
@@ -72,7 +94,7 @@ export default function Experience() {
       </mesh>
 
       <mesh
-        visible={false}
+        // visible={false}
         ref={planeRef}
         scale={[nearPlaneWidth, nearPlaneHeight, 1]}
       >
@@ -81,6 +103,7 @@ export default function Experience() {
           uniforms={uniforms}
           vertexShader={vertexShader}
           fragmentShader={fragmentShader}
+          transparent
         />
       </mesh>
     </>
